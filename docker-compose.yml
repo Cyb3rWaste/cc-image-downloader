@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  image-downloader:
+    image: image-downloader
+    container_name: celebrity_cutouts_image_downloader
+    ports:
+      - "5001:5000"  # Map local port 5001 to container port 5000
+    volumes:
+      - "C:/Users/rcsst/OneDrive/Pictures/ccimage:/app/downloads"  # Map the local folder to /app/downloads in the container
+    restart: always  # Optional: restart container if it stops

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Downloader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        input[type="file"] {
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .response {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+<img src="https://www.celebrity-cutouts.co.uk/wp-content/uploads/2024/10/Celebrity-Cutouts-logo.png" alt="Celrbity Cutouts Logo" width="400">
+
+    <h1>Import Image Downloader</h1>
+    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+        <label for="file">Choose CSV file:</label>
+        <input type="file" name="file" id="file" required>
+        <button type="submit">Download Images</button>
+    </form>
+<p>
+    <form id="convertForm" action="/convert" method="post">
+        <button type="submit">Convert Images to JPG</button>
+    </form>
+
+    <div id="response" class="response"></div>
+
+    <script>
+        const uploadForm = document.getElementById('uploadForm');
+        const convertForm = document.getElementById('convertForm');
+        const responseDiv = document.getElementById('response');
+
+        // Handle CSV file upload form submission
+        uploadForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent form submission
+
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                responseDiv.innerHTML = '<p class="error">Please select a CSV file to upload.</p>';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                responseDiv.innerHTML = '<p>Uploading and processing... Please wait.</p>';
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    responseDiv.innerHTML = `<p class="success">${result.message}</p>
+                                             <p>Images downloaded to: ${result.download_folder}</p>
+                                             <p>Total images downloaded: ${result.image_count}</p>`;
+                } else {
+                    responseDiv.innerHTML = `<p class="error">Error: ${result.error}</p>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<p class="error">An unexpected error occurred: ${error.message}</p>`;
+            }
+        });
+
+        // Handle Convert Images to JPG form submission
+        convertForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent form submission
+
+            try {
+                responseDiv.innerHTML = '<p>Converting images... Please wait.</p>';
+
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    responseDiv.innerHTML = `<p class="success">${result.message}</p>`;
+                } else {
+                    responseDiv.innerHTML = `<p class="error">Error: ${result.error}</p>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<p class="error">An unexpected error occurred: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
