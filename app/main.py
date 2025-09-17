@@ -5,8 +5,8 @@ The application allows users to download images from CSV files,
 drag-and-drop local images for conversion, and manage advanced
 conversion settings.
 
-Version: 1.2.0
-Author: Neil Randle
+Version: 1.3.0
+Author: Cyb3rWaste
 Date: 2025.09.17
 """
 
