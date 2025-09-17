@@ -4,143 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Downloader</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #f4f4f9;
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        form {
-            background: #fff;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        input[type="file"] {
-            margin-bottom: 20px;
-        }
-
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        .response {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .error {
-            color: red;
-        }
-
-        .success {
-            color: green;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-<body>
-<img src="https://www.celebrity-cutouts.co.uk/wp-content/uploads/2024/10/Celebrity-Cutouts-logo.png" alt="Celrbity Cutouts Logo" width="400">
 
-    <h1>Import Image Downloader</h1>
-    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
-        <label for="file">Choose CSV file:</label>
-        <input type="file" name="file" id="file" required>
-        <button type="submit">Download Images</button>
-    </form>
-<p>
-    <form id="convertForm" action="/convert" method="post">
-        <button type="submit">Convert Images to JPG</button>
-    </form>
+<body data-default-column="{{ default_column }}">
+    <div class="container">
+        <img class="logo" src="https://www.celebrity-cutouts.co.uk/wp-content/uploads/2024/10/Celebrity-Cutouts-logo.png" alt="Celebrity Cutouts Logo">
+        <h1>Import Image Toolkit</h1>
+        <p class="subtitle">Drop a CSV to fetch product imagery or drag images here to convert them instantly. Everything lands in today's dated download folder.</p>
 
-    <div id="response" class="response"></div>
+        <div id="dropZone" class="upload-dropzone" role="button" tabindex="0">
+            <strong>Drop CSV or images here</strong>
+            <span>Click to browse from your computer</span>
+            <span id="dropHint" class="file-size">Drop a CSV to download images or drop pictures to convert them.</span>
+        </div>
+        <input type="file" id="dropInput" accept=".csv,image/*" multiple hidden>
 
-    <script>
-        const uploadForm = document.getElementById('uploadForm');
-        const convertForm = document.getElementById('convertForm');
-        const responseDiv = document.getElementById('response');
+        <div class="action-buttons">
+            <button type="button" id="csvAction" class="primary" disabled>Download &amp; Convert CSV Images</button>
+            <button type="button" class="secondary-button" id="advancedToggle" aria-expanded="false">Advanced Options</button>
+        </div>
 
-        // Handle CSV file upload form submission
-        uploadForm.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Prevent form submission
+        <div class="advanced-panel" id="advancedPanel" hidden>
+            <label for="quality">Output quality</label>
+            <div class="range-control">
+                <input type="range" id="quality" name="quality" min="10" max="100" step="5" value="{{ default_quality }}">
+                <span class="quality-value" id="qualityValue">{{ default_quality }}</span>
+            </div>
+            <p class="hint">Higher quality preserves more detail but increases file size.</p>
 
-            const fileInput = document.getElementById('file');
-            const file = fileInput.files[0];
+            <div class="toggle-row">
+                <div class="toggle-text">
+                    <span class="toggle-title">Keep PNG files</span>
+                    <span class="toggle-description">Turn on to keep PNG output and preserve transparency. Leave off to convert to JPG for smaller files.</span>
+                </div>
+                <div class="toggle-controls">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="keepPng">
+                        <span class="toggle-slider" aria-hidden="true"></span>
+                        <span class="sr-only">Keep PNG files</span>
+                    </label>
+                    <span class="info-icon" tabindex="0" role="img" aria-label="Keep PNG files help" title="Turn on to keep PNG output and transparency. Leave off to convert to JPEG for smaller file sizes.">i</span>
+                </div>
+            </div>
 
-            if (!file) {
-                responseDiv.innerHTML = '<p class="error">Please select a CSV file to upload.</p>';
-                return;
-            }
+            <div class="toggle-row">
+                <div class="toggle-text">
+                    <span class="toggle-title">Add -web & SKU suffix</span>
+                    <span class="toggle-description">Toggle on to append -web and include SKU values (when available) in output filenames.</span>
+                </div>
+                <div class="toggle-controls">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enhanceNames">
+                        <span class="toggle-slider" aria-hidden="true"></span>
+                        <span class="sr-only">Add -web & SKU suffix</span>
+                    </label>
+                    <span class="info-icon" tabindex="0" role="img" aria-label="Enhanced filenames help" title="When enabled, filenames gain a -web suffix and SKU values (if present).">i</span>
+                </div>
+            </div>
 
-            const formData = new FormData();
-            formData.append('file', file);
+            <label for="columnSelect" style="margin-top: 1.2rem;">CSV image column</label>
+            <select id="columnSelect" disabled>
+                <option value="">Upload a CSV to choose a column</option>
+            </select>
+            <p class="hint">Defaults to "{{ default_column }}" when available.</p>
+        </div>
 
-            try {
-                responseDiv.innerHTML = '<p>Uploading and processing... Please wait.</p>';
-
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    responseDiv.innerHTML = `<p class="success">${result.message}</p>
-                                             <p>Images downloaded to: ${result.download_folder}</p>
-                                             <p>Total images downloaded: ${result.image_count}</p>`;
-                } else {
-                    responseDiv.innerHTML = `<p class="error">Error: ${result.error}</p>`;
-                }
-            } catch (error) {
-                responseDiv.innerHTML = `<p class="error">An unexpected error occurred: ${error.message}</p>`;
-            }
-        });
-
-        // Handle Convert Images to JPG form submission
-        convertForm.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Prevent form submission
-
-            try {
-                responseDiv.innerHTML = '<p>Converting images... Please wait.</p>';
-
-                const response = await fetch('/convert', {
-                    method: 'POST',
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    responseDiv.innerHTML = `<p class="success">${result.message}</p>`;
-                } else {
-                    responseDiv.innerHTML = `<p class="error">Error: ${result.error}</p>`;
-                }
-            } catch (error) {
-                responseDiv.innerHTML = `<p class="error">An unexpected error occurred: ${error.message}</p>`;
-            }
-        });
-    </script>
+        <div class="status-section">
+            <div id="folderInfo" class="folder-pill" hidden></div>
+            <div id="statusMessage" class="status-message info">Drop a CSV or images to get started.</div>
+            <ul id="statusDetails" class="status-details"></ul>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
 </body>
 </html>
